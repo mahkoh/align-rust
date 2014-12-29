@@ -25,7 +25,7 @@ impl<T: Clone> DynVec<T> {
         DynVec { vec: Vec::new(), default: default }
     }
 
-    fn get<'a>(&self, i: uint) -> T {
+    fn get(&self, i: uint) -> T {
         if i < self.vec.len() {
             self.vec[i].clone()
         } else {
