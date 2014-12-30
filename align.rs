@@ -1,6 +1,7 @@
-#![feature(phase)]
-#[phase(plugin)]
+#![feature(phase, slicing_syntax)]
+#![allow(unused_must_use)]
 
+#[phase(plugin)]
 extern crate regex_macros;
 extern crate regex;
 extern crate core;
@@ -83,7 +84,7 @@ fn parse_opts() -> Result<Opts, ()> {
         }
     };
     if matches.opt_present("h") {
-        print!("{}", usage(prog_name.as_slice(), &opts));
+        print!("{}", usage(prog_name[], &opts));
         return Err(());
     }
     let unicode = matches.opt_present("U");
@@ -101,7 +102,7 @@ fn parse_opts() -> Result<Opts, ()> {
         None => '"',
     };
     let until = match matches.opt_str("u") {
-        Some(s) => match s.as_slice().parse() {
+        Some(s) => match s.parse() {
             Some(u) => u,
             None => {
                 let _ = writeln!(&mut stderr(), "-u argument has to be a number");
@@ -116,7 +117,7 @@ fn parse_opts() -> Result<Opts, ()> {
     if matches.free.len() > 0 {
         let fmt = &matches.free[0];
         let test = regex!(r"(\d*)([<>=])");
-        for c in test.captures_iter(fmt.as_slice()) {
+        for c in test.captures_iter(fmt[]) {
             match c.at(1).unwrap() {
                 p if p.len() > 0 => max_width.push(p.parse().unwrap()),
                 _ => max_width.push(0),
@@ -150,13 +151,12 @@ impl Words {
         let mut words = Vec::new();
         let mut pos = 0;
         loop {
-            pos += match line.slice_from(pos).iter().position(|&c|
-                                                         !(c as char).is_whitespace()) {
+            pos += match line[pos..].iter().position(|&c| !(c as char).is_whitespace()) {
                 Some(i) => i,
                 None => break,
             };
             if words.len() == until {
-                let end = match line.slice_from(pos).iter().position(|&c| c=='\n' as u8) {
+                let end = match line[pos..].iter().position(|&c| c=='\n' as u8) {
                     Some(e) => pos + e,
                     None => line.len(),
                 };
@@ -166,7 +166,7 @@ impl Words {
             let start = pos;
             let mut esc = false;
             let mut string = false;
-            for (i, &c) in line.slice_from(start).iter().enumerate() {
+            for (i, &c) in line[start..].iter().enumerate() {
                 if !esc && c == str_delim as u8 {
                     string = !string;
                 }
@@ -201,7 +201,7 @@ impl<'a> Iterator<&'a [u8]> for WordIter<'a> {
         if self.pos < self.words.len() {
             let (start, end) = self.words[self.pos];
             self.pos += 1;
-            Some(self.line.slice(start, end))
+            Some(self.line[start..end])
         } else {
             None
         }
@@ -289,7 +289,7 @@ fn main() {
     let mut stdout = BufferedWriter::new(stdout_raw());
     for line in lines.iter() {
         if line.words.len() > 0 {
-            stdout.write(indent.as_slice()).unwrap();
+            stdout.write(indent[]);
         }
         let mut words = line.iter().enumerate().peekable();
         while let Some((i, word)) = words.next() {
@@ -300,27 +300,27 @@ fn main() {
             };
             match opts.align.get(i) {
                 Left => {
-                    stdout.write(word).unwrap();
+                    stdout.write(word);
                     if words.peek().is_some() {
-                        stdout.write(padding.slice_to(pad)).unwrap();
+                        stdout.write(padding[0..pad]);
                     }
                 },
                 Right => {
-                    stdout.write(padding.slice_to(pad)).unwrap();
-                    stdout.write(word).unwrap();
+                    stdout.write(padding[0..pad]);
+                    stdout.write(word);
                 },
                 Centered => {
-                    stdout.write(padding.slice_to(pad/2)).unwrap();
-                    stdout.write(word).unwrap();
+                    stdout.write(padding[0..pad/2]);
+                    stdout.write(word);
                     if words.peek().is_some() {
-                        stdout.write(padding.slice_to(pad-pad/2)).unwrap();
+                        stdout.write(padding[0..pad-pad/2]);
                     }
                 },
             }
             if words.peek().is_some() {
-                stdout.write(opts.out_sep.as_slice()).unwrap();
+                stdout.write(opts.out_sep[]);
             }
         }
-        stdout.write_str("\n").unwrap();
+        stdout.write_str("\n");
     }
 }
