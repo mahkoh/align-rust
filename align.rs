@@ -1,17 +1,12 @@
-#![feature(phase, slicing_syntax)]
+#![feature(slicing_syntax, macro_rules)]
 #![allow(unused_must_use)]
 
-#[phase(plugin)]
-extern crate regex_macros;
-extern crate regex;
-extern crate core;
 extern crate getopts;
 
 use std::io::{stdin, stderr, BufferedWriter};
 use std::io::stdio::{stdout_raw};
 use std::os::{args, set_exit_status};
 use std::{uint, str};
-
 use getopts::{getopts, optopt, optflag, usage};
 
 use Alignment::{Left, Right, Centered};
@@ -21,34 +16,34 @@ struct DynVec<T> {
     default: T,
 }
 
-impl<T: Clone> DynVec<T> {
+impl<T: Copy+Clone> DynVec<T> {
     fn new(default: T) -> DynVec<T> {
         DynVec { vec: Vec::new(), default: default }
     }
 
     fn get(&self, i: uint) -> T {
         if i < self.vec.len() {
-            self.vec[i].clone()
+            self.vec[i]
         } else {
-            self.default.clone()
+            self.default
         }
     }
 
     fn set(&mut self, index: uint, v: T) {
         let l = self.vec.len();
         if index >= l {
-            self.vec.grow(index - l + 1u, self.default.clone());
+            self.vec.grow(index - l + 1u, self.default);
         }
         self.vec[index] = v
     }
 
     fn push(&mut self, v: T) {
-        self.default = v.clone();
+        self.default = v;
         self.vec.push(v);
     }
 }
 
-#[deriving(Clone)]
+#[deriving(Copy, Clone)]
 enum Alignment {
     Left,
     Right,
@@ -62,6 +57,14 @@ struct Opts {
     unicode:   bool,
     align:     DynVec<Alignment>,
     max_width: DynVec<uint>,
+}
+
+macro_rules! err {
+    ($fmt:expr $($arg:tt)*) => {{
+        set_exit_status(1);
+        writeln!(&mut stderr(), $fmt $($arg)*);
+        return Err(());
+    }}
 }
 
 fn parse_opts() -> Result<Opts, ()> {
@@ -104,39 +107,44 @@ fn parse_opts() -> Result<Opts, ()> {
     let until = match matches.opt_str("u") {
         Some(s) => match s.parse() {
             Some(u) => u,
-            None => {
-                let _ = writeln!(&mut stderr(), "-u argument has to be a number");
-                set_exit_status(1);
-                return Err(());
-            },
+            None => err!("-u argument has to be a number"),
         },
         None => uint::MAX,
     };
     let mut align = DynVec::new(Left);
     let mut max_width = DynVec::new(0u);
     if matches.free.len() > 0 {
-        let fmt = &matches.free[0];
-        let test = regex!(r"(\d*)([<>=])");
-        for c in test.captures_iter(fmt[]) {
-            match c.at(1).unwrap() {
-                p if p.len() > 0 => max_width.push(p.parse().unwrap()),
-                _ => max_width.push(0),
+        let mut fmt = matches.free[0][];
+        while fmt.len() > 0 {
+            let non_digit = match fmt.as_bytes().iter()
+                                  .position(|&c| c < b'0' || c > b'9') {
+                Some(i) => i,
+                _ => err!("Invalid format sequence"),
+            };
+            if non_digit > 0 {
+                match fmt[0..non_digit].parse() {
+                    Some(i) => max_width.push(i),
+                    _ => err!("Invalid format sequence"),
+                }
+            } else {
+                max_width.push(0);
             }
-            match c.at(2).unwrap() {
-                "<" => align.push(Left),
-                ">" => align.push(Right),
-                "=" => align.push(Centered),
-                _ => unreachable!(),
+            match fmt.as_bytes()[non_digit] {
+                b'<' => align.push(Left),
+                b'>' => align.push(Right),
+                b'=' => align.push(Centered),
+                _ => err!("Invalid format sequence"),
             }
+            fmt = fmt[non_digit+1..];
         }
         max_width.push(0);
     }
     Ok(Opts {
         str_delim: str_delim,
-        out_sep: out_sep,
-        until: until,
-        unicode: unicode,
-        align: align,
+        out_sep:   out_sep,
+        until:     until,
+        unicode:   unicode,
+        align:     align,
         max_width: max_width
     })
 }
