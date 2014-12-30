@@ -228,11 +228,7 @@ fn read_as_bytes(opts: &mut Opts) -> (Option<Vec<u8>>, Vec<Words>) {
     let mut stdin = stdin();
     let mut indent: Option<Vec<u8>> = None;
     let mut lines = Vec::new();
-    loop {
-        let line = match stdin.read_until(b'\n') {
-            Ok(l) => l,
-            Err(..) => break,
-        };
+    while let Ok(line) = stdin.read_until(b'\n') {
         if indent.is_none() {
             let tmp = line.iter().map(|c| *c).take_while(|c| is_indent(*c)).collect();
             indent = Some(tmp);
@@ -252,12 +248,8 @@ fn read_as_unicode(opts: &mut Opts) -> (Option<Vec<u8>>, Vec<Words>) {
     let mut stdin = stdin();
     let mut indent: Option<Vec<u8>> = None;
     let mut lines = Vec::new();
-    loop {
-        // Unicode validation up here
-        let line = match stdin.read_line() {
-            Ok(l) => l.into_bytes(),
-            Err(..) => break,
-        };
+    while let Ok(line) = stdin.read_line() { // Unicode validation up here
+        let line = line.into_bytes();
         if indent.is_none() {
             let tmp = line.iter().map(|c| *c).take_while(|c| is_indent(*c)).collect();
             indent = Some(tmp);
