@@ -156,7 +156,7 @@ impl Words {
                 None => break,
             };
             if words.len() == until {
-                let end = match line[pos..].iter().position(|&c| c=='\n' as u8) {
+                let end = match line[pos..].iter().position(|&c| c == b'\n') {
                     Some(e) => pos + e,
                     None => line.len(),
                 };
@@ -170,8 +170,8 @@ impl Words {
                 if !esc && c == str_delim as u8 {
                     string = !string;
                 }
-                esc = !esc && c == '\\' as u8;
-                if c == '\n' as u8 || (!string && (c == ' ' as u8 || c == '\t' as u8)) {
+                esc = !esc && c == b'\\';
+                if c == b'\n' || (!string && (c == b' ' || c == b'\t')) {
                     pos += i;
                     break;
                 }
@@ -209,7 +209,7 @@ impl<'a> Iterator<&'a [u8]> for WordIter<'a> {
 }
 
 fn is_indent(c: u8) -> bool {
-    c == ' ' as u8 || c == '\t' as u8
+    c == b' ' || c == b'\t'
 }
 
 fn unsafe_byte_unicode_width(s: &[u8]) -> uint {
@@ -221,7 +221,7 @@ fn read_as_bytes(opts: &mut Opts) -> (Option<Vec<u8>>, Vec<Words>) {
     let mut indent: Option<Vec<u8>> = None;
     let mut lines = Vec::new();
     loop {
-        let line = match stdin.read_until('\n' as u8) {
+        let line = match stdin.read_until(b'\n') {
             Ok(l) => l,
             Err(..) => break,
         };
@@ -283,7 +283,7 @@ fn main() {
     let indent = indent.unwrap();
     let padding = {
         let max_max_width = *opts.max_width.vec.iter().max().unwrap_or(&0);
-        Vec::from_elem(max_max_width, ' ' as u8)
+        Vec::from_elem(max_max_width, b' ')
     };
 
     let mut stdout = BufferedWriter::new(stdout_raw());
