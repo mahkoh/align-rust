@@ -3,19 +3,6 @@ align
 
 Align text.
 
-Usage
------
-
-    align [-h] [-o <output separator>] [-s <string delimiter>] [-u <column>] [-U] [format]
-
-Reads from `stdin` and writes to `stdout`.
-
-- `-o <separator>`: Insert `<separator>` in between the columns (default: `" "`)
-- `-s <delimiter>`: Use `<delimiter>` as string delimiter (default: `'"'`) (use `-s ""` to ignore strings)
-- `-u <column>`: Only align text up to `<column>`
-- `-U`: Use unicode width instead of byte count to determine the width of a word. This is useful for Chinese, Japanese, etc.
-- `format`: A sequence of `<`, `>`, or `=` representing left alignment, right alignment, or centering of the respective column. The character can optionally be prefixed with a non-negative decimal indicating the minimal padding.
-
 Example
 -------
 
@@ -72,4 +59,4 @@ This program differs from `column -t` in the following ways:
 License
 -------
 
-MIT
+GPL 3

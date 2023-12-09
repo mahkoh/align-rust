@@ -1,0 +1,12 @@
+[package]
+name = "align"
+version = "1.0.0"
+edition = "2021"
+license = "GPL-3.0-only"
+repository = "https://github.com/mahkoh/align-rust"
+description = "Utility for aligning text"
+
+[dependencies]
+clap = { version = "4.4.11", features = ["derive"] }
+unicode-width = "0.1.11"
+anyhow = "1.0.75"
